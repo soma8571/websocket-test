@@ -22,24 +22,49 @@ app.get('/', (req, res) => {
 // WebSocket kapcsolat kezelése
 wss.on('connection', (ws) => {
     console.log('Új WebSocket kapcsolat!');
+    const myCounter = counter()
+    generateRandomInterval(myCounter, ws)
 
-    ws.on('message', (message) => {
+    /* ws.on('message', (message) => {
         console.log(`Üzenet érkezett: ${message}`);
         ws.send(`Szerver válasza: ${message}`);
-    });
+    }); */
 
     ws.on('close', () => {
         console.log('WebSocket kapcsolat lezárva.');
     });
 
-    const myInterval = setInterval(() => {
-        let message = getNextPost()
-        ws.send(message)
-        if (message === "Nincs adat" || message === "Elfogytak a posztok") {
-            clearInterval(myInterval)
-        }
-    }, 2000)
 });
+
+function generateRandomInterval(myCounter, ws) {
+    let interval = 0
+    let rand = Math.random()
+    if (rand < 0.5) {
+        interval = Math.round(rand * 10000) //max 4900 ms
+    } else {
+        interval = Math.round(rand * 6000) //max 5940 ms
+    }
+    console.log(interval)
+
+    setTimeout(()=> {
+        let message = getNextPost(myCounter)
+        ws.send(message)
+        if (message !== "Nincs adat" && message !== "Elfogytak a posztok") {
+            generateRandomInterval(myCounter, ws)
+        }
+    }, interval)
+}
+//generateRandomInterval()
+
+//konstans időként adja vissza az üzeneteket
+
+/* const myInterval = setInterval(() => {
+    let message = getNextPost()
+    ws.send(message)
+    if (message === "Nincs adat" || message === "Elfogytak a posztok") {
+        clearInterval(myInterval)
+    }
+}, 2000) */
 
 function counter() {
     let index = 0
@@ -50,20 +75,22 @@ function counter() {
 
     return inkrement
 }
-const myCounter = counter()
 
-function getNextPost() {
+function getNextPost(myCounter) {
     if (posts.length === 0) return "Nincs adat"
 
     let index = myCounter()
 
-    if (index < posts.length) {
+    return index < posts.length ? 
+        `${index}. poszt: ${posts[index]}` : "Elfogytak a posztok"
+
+    /* if (index < posts.length) {
         console.log(`${index}. poszt: ${posts[index]}`)
         return `${index}. poszt: ${posts[index]}`
     } else {
-        console.log("Elfogytak a posztok.")
+        console.log("Elfogytak a posztok")
         return "Elfogytak a posztok"
-    }
+    } */
 }
 
 //Posztok lekérése API-tól
